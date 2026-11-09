@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { FiX, FiHome, FiBriefcase } from "react-icons/fi";
 import { LEAD_SOURCES, LEAD_TYPES, type LeadInput, type LeadType } from "@/types/lead";
-import { useCurrentUser } from "@/lib/session";
+import { useProfile } from "@/lib/session";
 import Button from "@/components/ui/Button";
 
 interface FormState {
@@ -42,7 +42,7 @@ interface Props {
 }
 
 export default function LeadFormModal({ onClose, onCreate }: Props) {
-  const { name: user } = useCurrentUser();
+  const user = useProfile().fullName;
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);

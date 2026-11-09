@@ -1,7 +1,9 @@
+import type { ReactNode } from "react";
 import AuthGate from "@/components/auth/AuthGate";
 import Header from "@/components/layout/Header";
 
-export default function LeadsLayout({ children }: LayoutProps<"/leads">) {
+/** Every page in this folder requires a signed-in staff member. */
+export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGate>
       <div className="min-h-screen bg-slate-50">

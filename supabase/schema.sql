@@ -1,7 +1,42 @@
--- IKPM leads table
--- Run this once in Supabase: Dashboard → SQL Editor → New query → paste → Run.
+-- IKPM database setup
+-- Run this whole file in Supabase: Dashboard → SQL Editor → New query → paste → Run.
+-- Safe to run again; it only creates what is missing and refreshes functions/policies.
 
--- Human-friendly lead numbers: LD-1001, LD-1002, …
+-------------------------------------------------------------------------------
+-- 1. Staff profiles (name, email, role)
+-------------------------------------------------------------------------------
+create table if not exists public.profiles (
+  id         uuid primary key references auth.users (id) on delete cascade,
+  full_name  text not null check (length(trim(full_name)) > 0),
+  email      text not null,
+  role       text not null check (role in ('admin', 'operations', 'sales', 'finance')),
+  created_at timestamptz not null default now()
+);
+
+-- Role of the signed-in user (null if they have no profile).
+create or replace function public.my_role()
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
+alter table public.profiles enable row level security;
+
+-- Everyone sees their own profile; admins see all. Profiles are only
+-- created/changed by the server (secret key), never directly from the browser.
+drop policy if exists "View own profile or admin views all" on public.profiles;
+create policy "View own profile or admin views all"
+  on public.profiles for select
+  to authenticated
+  using (id = auth.uid() or public.my_role() = 'admin');
+
+-------------------------------------------------------------------------------
+-- 2. Leads
+-------------------------------------------------------------------------------
 create sequence if not exists public.lead_number_seq start 1001;
 
 create table if not exists public.leads (
@@ -30,9 +65,10 @@ set search_path = public
 as $$
 begin
   new.added_by := auth.uid();
-  select coalesce(nullif(u.raw_user_meta_data ->> 'full_name', ''), u.email)
+  select coalesce(p.full_name, u.email)
     into new.added_by_name
     from auth.users u
+    left join public.profiles p on p.id = u.id
    where u.id = auth.uid();
   return new;
 end;
@@ -43,17 +79,24 @@ create trigger leads_set_added_by
   before insert on public.leads
   for each row execute function public.set_lead_added_by();
 
--- Security: only signed-in staff can see or add leads. No edits or deletes from the app.
+-- Only staff with a role can see or add leads. No edits or deletes from the app.
 alter table public.leads enable row level security;
 
 drop policy if exists "Staff can view leads" on public.leads;
 create policy "Staff can view leads"
   on public.leads for select
   to authenticated
-  using (true);
+  using (public.my_role() is not null);
 
 drop policy if exists "Staff can add leads" on public.leads;
 create policy "Staff can add leads"
   on public.leads for insert
   to authenticated
-  with check (auth.uid() is not null);
+  with check (public.my_role() is not null);
+
+-------------------------------------------------------------------------------
+-- 3. FIRST ADMIN (run once, separately, after creating your own user in
+--    Authentication → Users). Replace the name and email, then run:
+-------------------------------------------------------------------------------
+-- insert into public.profiles (id, full_name, email, role)
+-- select id, 'Your Name', email, 'admin' from auth.users where email = 'you@example.com';

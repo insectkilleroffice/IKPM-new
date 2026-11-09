@@ -20,7 +20,7 @@ const TYPE_STYLES = {
   Company: "bg-violet-50 text-violet-700 ring-violet-200",
 };
 
-const COLS = 8;
+const COLS = 7;
 
 export default function LeadsTable({ leads, loading, error, onRetry }: Props) {
   const [query, setQuery] = useState("");
@@ -46,11 +46,10 @@ export default function LeadsTable({ leads, loading, error, onRetry }: Props) {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px] text-left text-sm">
+        <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
             <tr>
               <th className="py-3 pl-4 font-medium">Name</th>
-              <th className="py-3 font-medium">Lead ID</th>
               <th className="py-3 font-medium">Type</th>
               <th className="py-3 font-medium">Company</th>
               <th className="py-3 font-medium">Phone</th>
@@ -89,7 +88,6 @@ export default function LeadsTable({ leads, loading, error, onRetry }: Props) {
                       <span className="font-medium text-slate-900">{l.name}</span>
                     </div>
                   </td>
-                  <td className="py-3 font-mono text-xs text-slate-500">{l.code}</td>
                   <td className="py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${TYPE_STYLES[l.type]}`}>
                       {l.type}
