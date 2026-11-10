@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaBug } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
+import { canUseLeads } from "@/lib/leads";
 import { signOut, useProfile } from "@/lib/session";
 import { ROLE_LABELS } from "@/types/user";
 import Avatar from "@/components/ui/Avatar";
@@ -13,7 +14,12 @@ export default function Header() {
   const pathname = usePathname();
 
   const links = [
-    { href: "/leads", label: "Leads" },
+    ...(canUseLeads(profile.role)
+      ? [
+          { href: "/leads", label: "Leads" },
+          { href: "/sales", label: "Sales" },
+        ]
+      : []),
     ...(profile.role === "admin" ? [{ href: "/users", label: "Users" }] : []),
   ];
 

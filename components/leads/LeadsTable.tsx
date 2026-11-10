@@ -13,6 +13,7 @@ interface Props {
   loading: boolean;
   error: string | null;
   onRetry: () => void;
+  onSelect: (lead: Lead) => void;
 }
 
 const TYPE_STYLES = {
@@ -22,7 +23,7 @@ const TYPE_STYLES = {
 
 const COLS = 7;
 
-export default function LeadsTable({ leads, loading, error, onRetry }: Props) {
+export default function LeadsTable({ leads, loading, error, onRetry, onSelect }: Props) {
   const [query, setQuery] = useState("");
   const loaded = !loading && !error;
 
@@ -81,7 +82,14 @@ export default function LeadsTable({ leads, loading, error, onRetry }: Props) {
             )}
             {loaded &&
               rows.map((l) => (
-                <tr key={l.id} className="hover:bg-slate-50">
+                <tr
+                  key={l.id}
+                  tabIndex={0}
+                  onClick={() => onSelect(l)}
+                  onKeyDown={(e) => e.key === "Enter" && onSelect(l)}
+                  className="cursor-pointer outline-none hover:bg-slate-50 focus-visible:bg-emerald-50"
+                  title="Log contact"
+                >
                   <td className="py-3 pl-4">
                     <div className="flex items-center gap-3">
                       <Avatar name={l.name} />
@@ -95,13 +103,13 @@ export default function LeadsTable({ leads, loading, error, onRetry }: Props) {
                   </td>
                   <td className="py-3 text-slate-700">{l.companyName || <span className="text-slate-400">—</span>}</td>
                   <td className="py-3">
-                    <a href={`tel:${l.phone.replace(/\s/g, "")}`} className="text-slate-700 hover:text-emerald-700">
+                    <a href={`tel:${l.phone.replace(/\s/g, "")}`} onClick={(e) => e.stopPropagation()} className="text-slate-700 hover:text-emerald-700">
                       {l.phone}
                     </a>
                   </td>
                   <td className="py-3">
                     {l.email ? (
-                      <a href={`mailto:${l.email}`} className="text-slate-700 hover:text-emerald-700">{l.email}</a>
+                      <a href={`mailto:${l.email}`} onClick={(e) => e.stopPropagation()} className="text-slate-700 hover:text-emerald-700">{l.email}</a>
                     ) : (
                       <span className="text-slate-400">—</span>
                     )}
