@@ -29,3 +29,38 @@ Only accounts with the `sales` role can sign in here; admins use the separate ad
 - Every step is kept in the lead's history with who moved it.
 
 All rules are enforced in the database (row level security + the `log_lead_activity` function), not just in the UI.
+
+## Lead intake API
+
+Scrapers, website forms, Zapier etc. can add leads with `POST /api/leads`.
+Set `SUPABASE_SECRET_KEY` and `LEADS_API_KEY` in `.env.local` (see `.env.example`).
+Leads arrive in the Leads tab as **New**, added by "System" (or your `addedBy` label), visible to all sales people.
+
+```bash
+curl -X POST http://localhost:3000/api/leads \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $LEADS_API_KEY" \
+  -d '[
+    {"name": "Ali Khan", "phone": "+92 300 1234567", "source": "Google Maps Scraper"},
+    {"name": "Sara Ahmed", "phone": "03011234567", "companyName": "Acme Foods", "email": "sara@acme.pk"}
+  ]'
+```
+
+| Field | |
+|---|---|
+| `name`, `phone` | required |
+| `type` | `Residential` or `Company` (defaults to `Company` if `companyName` is given) |
+| `companyName` | required for `Company` |
+| `email` | optional |
+| `source` | optional, default `API` |
+| `addedBy` | optional "Added By" label, default `System` |
+
+Send one object, an array, or `{ "leads": [...] }` — up to 500 per request. Leads whose phone number
+already exists are skipped. The response lists what was `created`, `skipped` (duplicates) and `failed` (with reasons):
+
+```json
+{ "created": 1, "skipped": 1, "failed": 0,
+  "leads": [{ "index": 0, "id": "…", "code": "LD-1042", "name": "Ali Khan", "phone": "+92 300 1234567" }],
+  "duplicates": [{ "index": 1, "phone": "03011234567", "existingCode": "LD-1007" }],
+  "errors": [] }
+```
