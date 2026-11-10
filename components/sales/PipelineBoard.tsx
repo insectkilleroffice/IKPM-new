@@ -94,6 +94,12 @@ function Card({ lead: l, onSelect }: { lead: Lead; onSelect: (lead: Lead) => voi
         {l.companyName ? l.name : l.type}
       </p>
 
+      {l.stage === "follow_up" && l.rejectedAt && (
+        <span className="mt-2 inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-inset ring-rose-200">
+          Rejected
+        </span>
+      )}
+
       {(l.stage === "meeting" || l.stage === "call") && (
         <span
           className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${

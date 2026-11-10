@@ -90,6 +90,7 @@ create table if not exists public.leads (
   assigned_to_name text,
   next_action_at   timestamptz,                                -- date of the next task
   closed_reason    text check (closed_reason in ('wrong_lead', 'already_working')), -- already_working: old data only
+  rejected_at      timestamptz,                                -- proposal rejected → back in Follow-up, tagged "Rejected"
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
   constraint company_needs_name check (type <> 'Company' or length(trim(coalesce(company_name, ''))) > 0),
@@ -98,6 +99,7 @@ create table if not exists public.leads (
 
 -- Clean-up of earlier versions (no-ops on a fresh database).
 alter table public.leads drop column if exists added_by_role;
+alter table public.leads add column if not exists rejected_at timestamptz;
 alter table public.leads alter column added_by drop not null;
 alter table public.leads alter column added_by drop default;
 
@@ -121,6 +123,7 @@ begin
   new.assigned_to_name := null;
   new.next_action_at   := null;
   new.closed_reason    := null;
+  new.rejected_at      := null;
   new.created_at       := now();
   new.updated_at       := now();
   new.added_by         := auth.uid();
@@ -240,8 +243,9 @@ begin
   if p_kind in ('follow_up', 'call', 'meeting', 'inspection') and p_scheduled_at is null then
     raise exception 'Choose a date and time' using errcode = '22023';
   end if;
-  if v_wrong and v_notes is null then
-    raise exception 'Add a note explaining why' using errcode = '22023';
+  -- Notes are required on every step.
+  if v_notes is null then
+    raise exception '%', case when v_wrong then 'Add a note explaining why' else 'Add notes' end using errcode = '22023';
   end if;
 
   -- Lock the row so two people can't claim the same lead at once.
@@ -278,6 +282,8 @@ begin
          next_action_at   = case when v_wrong then null else p_scheduled_at end,
          assigned_to      = case when v_wrong then assigned_to else coalesce(assigned_to, v_uid) end,
          assigned_to_name = case when not v_wrong and assigned_to is null then v_name else assigned_to_name end,
+         -- "Rejected" tag stays while the lead is in Follow-up, clears once it moves on.
+         rejected_at      = case when p_kind = 'follow_up' then rejected_at end,
          updated_at       = now()
    where id = p_lead_id;
 end;

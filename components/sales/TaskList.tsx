@@ -191,9 +191,16 @@ function TaskGroup({
                     {showDate ? formatDateTime(l.nextActionAt!) : at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-slate-900">
-                      {l.name}
-                      {l.companyName && <span className="font-normal text-slate-500"> · {l.companyName}</span>}
+                    <span className="flex items-center gap-1.5 truncate text-sm font-medium text-slate-900">
+                      <span className="truncate">
+                        {l.name}
+                        {l.companyName && <span className="font-normal text-slate-500"> · {l.companyName}</span>}
+                      </span>
+                      {stage === "follow_up" && l.rejectedAt && (
+                        <span className="shrink-0 rounded-full bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 ring-1 ring-inset ring-rose-200">
+                          Rejected
+                        </span>
+                      )}
                     </span>
                     <span className="block truncate text-xs text-slate-500">{l.phone}</span>
                   </span>

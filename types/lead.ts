@@ -37,8 +37,11 @@ export const STAGE_LABELS: Record<LeadStage, string> = {
 
 export type ClosedReason = "wrong_lead" | "already_working";
 
+/** Proposal events the admin app writes to a lead's history (sales can't log these). */
+export type ProposalEvent = "proposal_sent" | "proposal_accepted" | "proposal_rejected";
+
 /** What was logged. Matches the database's lead_activities.kind. */
-export type ActivityKind = "follow_up" | "call" | "meeting" | "inspection" | "proposal" | ClosedReason;
+export type ActivityKind = "follow_up" | "call" | "meeting" | "inspection" | "proposal" | ClosedReason | ProposalEvent;
 
 export const ACTIVITY_LABELS: Record<ActivityKind, string> = {
   follow_up: "Follow-up",
@@ -48,7 +51,13 @@ export const ACTIVITY_LABELS: Record<ActivityKind, string> = {
   proposal: "Proposal",
   wrong_lead: "Wrong lead",
   already_working: "Working with other company", // old entries only; no longer offered
+  proposal_sent: "Proposal sent to client",
+  proposal_accepted: "Client accepted",
+  proposal_rejected: "Client rejected · Follow-up",
 };
+
+/** Proposal events only show their label (and, for a rejection, the reason). */
+export const isProposalEvent = (kind: ActivityKind): kind is ProposalEvent => kind.startsWith("proposal_");
 
 export interface Lead {
   id: string; // database uuid
@@ -66,6 +75,8 @@ export interface Lead {
   assignedToName: string; // "" while unclaimed
   nextActionAt: string | null; // ISO date of the next scheduled step
   closedReason: ClosedReason | null;
+  /** Set when the client rejected the proposal; shown as a "Rejected" tag while in Follow-up. */
+  rejectedAt: string | null;
   updatedAt: string; // ISO
 }
 
@@ -79,10 +90,14 @@ export interface LeadActivity {
   notes: string;
   createdByName: string;
   createdAt: string;
+  /** Meetings / inspections: who admin assigned, where to go and their notes ("" if none). */
+  attendeeName: string;
+  visitAddress: string;
+  attendeeNotes: string;
 }
 
 export interface ActivityInput {
-  kind: ActivityKind;
+  kind: Exclude<ActivityKind, ProposalEvent>;
   scheduledAt: string | null; // ISO
   notes: string;
 }

@@ -20,11 +20,12 @@ interface LeadRow {
   assigned_to_name: string | null;
   next_action_at: string | null;
   closed_reason: ClosedReason | null;
+  rejected_at: string | null;
   updated_at: string;
 }
 
 const COLUMNS =
-  "id, code, type, name, company_name, phone, email, source, added_by_name, created_at, stage, assigned_to, assigned_to_name, next_action_at, closed_reason, updated_at";
+  "id, code, type, name, company_name, phone, email, source, added_by_name, created_at, stage, assigned_to, assigned_to_name, next_action_at, closed_reason, rejected_at, updated_at";
 
 function toLead(r: LeadRow): Lead {
   return {
@@ -43,6 +44,7 @@ function toLead(r: LeadRow): Lead {
     assignedToName: r.assigned_to_name ?? "",
     nextActionAt: r.next_action_at,
     closedReason: r.closed_reason,
+    rejectedAt: r.rejected_at,
     updatedAt: r.updated_at,
   };
 }
@@ -91,7 +93,7 @@ export async function logActivity(leadId: string, input: ActivityInput): Promise
 export async function fetchActivities(leadId: string): Promise<LeadActivity[]> {
   const { data, error } = await getSupabase()
     .from("lead_activities")
-    .select("id, kind, scheduled_at, notes, created_by_name, created_at")
+    .select("id, kind, scheduled_at, notes, created_by_name, created_at, attendee_name, visit_address, attendee_notes")
     .eq("lead_id", leadId)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
@@ -102,6 +104,9 @@ export async function fetchActivities(leadId: string): Promise<LeadActivity[]> {
     notes: r.notes ?? "",
     createdByName: r.created_by_name,
     createdAt: r.created_at,
+    attendeeName: r.attendee_name ?? "",
+    visitAddress: r.visit_address ?? "",
+    attendeeNotes: r.attendee_notes ?? "",
   }));
 }
 

@@ -14,7 +14,7 @@ import {
   FiX,
   FiXCircle,
 } from "react-icons/fi";
-import { ACTIVITY_LABELS, STAGE_LABELS, type ActivityKind, type Lead, type LeadActivity } from "@/types/lead";
+import { ACTIVITY_LABELS, STAGE_LABELS, isProposalEvent, type ActivityKind, type Lead, type LeadActivity } from "@/types/lead";
 import { fetchActivities, logActivity } from "@/lib/leads";
 import { formatDateTime } from "@/lib/utils";
 import Button from "@/components/ui/Button";
@@ -138,7 +138,8 @@ export default function LogContactModal({ lead, mode, onClose, onLogged }: Props
     const next: typeof errors = {};
     if (tab.date === "required" && !when) next.when = "Choose a date and time";
     if (when && Number.isNaN(new Date(when).getTime())) next.when = "Enter a valid date and time";
-    if (tab.notesRequired && !notes.trim()) next.notes = "Add a note explaining why";
+    // Notes are required on every step.
+    if (!notes.trim()) next.notes = tab.notesRequired ? "Add a note explaining why" : "Add notes";
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -274,7 +275,7 @@ export default function LogContactModal({ lead, mode, onClose, onLogged }: Props
 
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-slate-600">
-              Notes {tab.notesRequired && <span className="text-rose-500">*</span>}
+              Notes <span className="text-rose-500">*</span>
             </span>
             <textarea
               rows={3}
@@ -342,19 +343,57 @@ function History({ leadId }: { leadId: string }) {
       {items?.length === 0 && <p className="text-xs text-slate-400">Nothing logged yet.</p>}
       {items && items.length > 0 && (
         <ol className="space-y-3">
-          {items.map((a) => (
-            <li key={a.id} className="border-l-2 border-slate-200 pl-3 text-sm">
-              <p className="font-medium text-slate-800">
-                {ACTIVITY_LABELS[a.kind]}
+          {items.map((a) => {
+            const proposalEvent = isProposalEvent(a.kind);
+            // Proposal events: label only (no proposal code / amount). A rejection made
+            // with the new flow also has a follow-up date and the client's reason.
+            const showNotes = a.notes && (!proposalEvent || (a.kind === "proposal_rejected" && a.scheduledAt));
+            return (
+            <li
+              key={a.id}
+              className={`border-l-2 pl-3 text-sm ${
+                a.kind === "proposal_accepted" ? "border-emerald-400" : a.kind === "proposal_rejected" ? "border-rose-400" : "border-slate-200"
+              }`}
+            >
+              <p
+                className={`font-medium ${
+                  a.kind === "proposal_accepted" ? "text-emerald-700" : a.kind === "proposal_rejected" ? "text-rose-700" : "text-slate-800"
+                }`}
+              >
+                {ACTIVITY_LABELS[a.kind] ?? a.kind}
                 {a.scheduledAt && <span className="font-normal text-slate-500"> · {formatDateTime(a.scheduledAt)}</span>}
               </p>
-              {a.notes && <p className="whitespace-pre-wrap text-slate-600">{a.notes}</p>}
+              {showNotes && (
+                <p className="whitespace-pre-wrap text-slate-600">
+                  {a.kind === "proposal_rejected" && <span className="font-medium text-slate-700">Reason: </span>}
+                  {a.notes}
+                </p>
+              )}
+              {a.attendeeName && (
+                <div className="mt-1 space-y-0.5 rounded-md bg-violet-50 px-2.5 py-1.5 text-xs text-slate-700">
+                  <p>
+                    {a.attendeeName.includes(",") ? "Attendees" : "Attendee"}:{" "}
+                    <span className="font-medium">{a.attendeeName}</span>
+                  </p>
+                  {a.visitAddress && (
+                    <p className="whitespace-pre-wrap">
+                      <span className="font-medium">Address:</span> {a.visitAddress}
+                    </p>
+                  )}
+                  {a.attendeeNotes && (
+                    <p className="whitespace-pre-wrap">
+                      <span className="font-medium">Notes:</span> {a.attendeeNotes}
+                    </p>
+                  )}
+                </div>
+              )}
               <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
                 <FiUser size={11} />
                 Moved by <span className="font-medium text-slate-700">{a.createdByName}</span> · {formatDateTime(a.createdAt)}
               </p>
             </li>
-          ))}
+            );
+          })}
         </ol>
       )}
     </div>
