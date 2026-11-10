@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { FiBriefcase, FiClock, FiHome, FiPhone, FiUsers } from "react-icons/fi";
 import { ACTIVITY_LABELS, BOARD_COLUMNS, columnOf, type BoardColumn, type Lead } from "@/types/lead";
 import { dueStatus, formatDateTime } from "@/lib/utils";
-import Avatar from "@/components/ui/Avatar";
 
 const COLUMN_LABELS: Record<BoardColumn, string> = {
   follow_up: "Follow-up",
@@ -30,8 +29,6 @@ const DUE_STYLES = {
 
 interface Props {
   leads: Lead[];
-  /** Show the owner on each card (admin view). */
-  showOwner: boolean;
   onSelect: (lead: Lead) => void;
 }
 
@@ -41,13 +38,15 @@ function sortColumn(stage: BoardColumn, items: Lead[]) {
   return items.sort((a, b) => (a.nextActionAt ?? "￿").localeCompare(b.nextActionAt ?? "￿"));
 }
 
-export default function PipelineBoard({ leads, showOwner, onSelect }: Props) {
+export default function PipelineBoard({ leads, onSelect }: Props) {
   const columns = useMemo(
     () =>
       BOARD_COLUMNS.map((stage) => ({
         stage,
         items: sortColumn(stage, leads.filter((l) => l.stage !== "new" && columnOf(l.stage) === stage)),
-      })),
+      }))
+        // Closed is only shown if old "other company" leads exist (wrong leads go to admin).
+        .filter((c) => c.stage !== "closed" || c.items.length > 0),
     [leads]
   );
 
@@ -69,7 +68,7 @@ export default function PipelineBoard({ leads, showOwner, onSelect }: Props) {
             <div className="flex-1 space-y-2 px-2 pb-2">
               {items.length === 0 && <p className="px-1 py-6 text-center text-xs text-slate-400">No leads</p>}
               {items.map((l) => (
-                <Card key={l.id} lead={l} showOwner={showOwner} onSelect={onSelect} />
+                <Card key={l.id} lead={l} onSelect={onSelect} />
               ))}
             </div>
           </section>
@@ -79,7 +78,7 @@ export default function PipelineBoard({ leads, showOwner, onSelect }: Props) {
   );
 }
 
-function Card({ lead: l, showOwner, onSelect }: { lead: Lead; showOwner: boolean; onSelect: (lead: Lead) => void }) {
+function Card({ lead: l, onSelect }: { lead: Lead; onSelect: (lead: Lead) => void }) {
   const due = l.nextActionAt ? dueStatus(l.nextActionAt) : null;
   const TypeIcon = l.type === "Company" ? FiBriefcase : FiHome;
 
@@ -118,11 +117,6 @@ function Card({ lead: l, showOwner, onSelect }: { lead: Lead; showOwner: boolean
         ) : (
           <span className="flex items-center gap-1 text-[11px] text-slate-400">
             <FiPhone size={11} /> {l.phone}
-          </span>
-        )}
-        {showOwner && l.assignedToName && (
-          <span title={l.assignedToName}>
-            <Avatar name={l.assignedToName} size={22} />
           </span>
         )}
       </div>

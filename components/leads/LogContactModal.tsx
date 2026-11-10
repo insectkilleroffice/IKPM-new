@@ -3,9 +3,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { IconType } from "react-icons";
 import {
-  FiBriefcase,
   FiCalendar,
   FiFileText,
+  FiLock,
   FiMail,
   FiPhone,
   FiSearch,
@@ -19,7 +19,7 @@ import { fetchActivities, logActivity } from "@/lib/leads";
 import { formatDateTime } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 
-type TabId = "follow_up" | "meeting" | "inspection" | "proposal" | "wrong_lead" | "already_working";
+type TabId = "follow_up" | "meeting" | "inspection" | "proposal" | "wrong_lead";
 type MeetingMode = "in_person" | "call";
 
 interface Tab {
@@ -73,19 +73,14 @@ const TABS: Record<TabId, Tab> = {
     notesRequired: true,
     notesPlaceholder: "Why is this a wrong lead? e.g. wrong number, not interested",
   },
-  already_working: {
-    id: "already_working",
-    label: "Other company",
-    icon: FiBriefcase,
-    date: "none",
-    notesRequired: true,
-    notesPlaceholder: "Who are they already working with? Contract end date?",
-  },
 };
 
-const CONTACT_TABS: TabId[] = ["follow_up", "meeting", "wrong_lead", "already_working"];
+const CONTACT_TABS: TabId[] = ["follow_up", "meeting", "wrong_lead"];
 // "Wrong lead" is only offered on first contact (Leads tab), not on the Sales board.
-const PIPELINE_TABS: TabId[] = ["follow_up", "meeting", "inspection", "proposal", "already_working"];
+const PIPELINE_TABS: TabId[] = ["follow_up", "meeting", "inspection", "proposal"];
+
+/** Sales people can only move a lead while it is New or in Follow-up; after that only admin can. */
+const SALES_MOVABLE: Lead["stage"][] = ["new", "follow_up"];
 
 const inputCls =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
@@ -99,8 +94,6 @@ function initialTab(lead: Lead): { tab: TabId; mode: MeetingMode } {
     case "inspection":
     case "proposal":
       return { tab: lead.stage, mode: "in_person" };
-    case "closed":
-      return { tab: "already_working", mode: "in_person" };
     default:
       return { tab: "follow_up", mode: "in_person" };
   }
@@ -125,6 +118,7 @@ export default function LogContactModal({ lead, mode, onClose, onLogged }: Props
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const tab = TABS[tabId];
+  const locked = !SALES_MOVABLE.includes(lead.stage);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -140,7 +134,7 @@ export default function LogContactModal({ lead, mode, onClose, onLogged }: Props
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (saving) return;
+    if (saving || locked) return;
     const next: typeof errors = {};
     if (tab.date === "required" && !when) next.when = "Choose a date and time";
     if (when && Number.isNaN(new Date(when).getTime())) next.when = "Enter a valid date and time";
@@ -206,6 +200,13 @@ export default function LogContactModal({ lead, mode, onClose, onLogged }: Props
         </div>
 
         <div className="space-y-4 px-5 py-4">
+          {locked ? (
+            <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+              <FiLock size={15} className="mt-0.5 shrink-0" />
+              This lead is in {STAGE_LABELS[lead.stage]}. Only admin can move it to the next step.
+            </p>
+          ) : (
+          <>
           {/* Tabs */}
           <div className={`grid gap-2 ${tabs.length > 4 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-4"}`} role="tablist">
             {tabs.map((id) => {
@@ -289,23 +290,29 @@ export default function LogContactModal({ lead, mode, onClose, onLogged }: Props
           </label>
 
           {saveError && <p className="rounded-md bg-rose-50 px-3 py-2 text-xs text-rose-700">{saveError}</p>}
+          </>
+          )}
 
           {mode === "pipeline" && <History leadId={lead.id} />}
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-5 py-4">
           <p className="text-xs text-slate-500">
-            {tabId === "wrong_lead" && !lead.assignedTo
-              ? "Removes this lead. Only admin will see it."
-              : mode === "contact"
-                ? "Moves this lead to your Sales board"
-                : `Moves to ${tab.date === "none" ? "Closed" : tab.label}`}
+            {locked
+              ? ""
+              : tabId === "wrong_lead"
+                ? "Removes this lead. Only admin will see it."
+                : mode === "contact"
+                  ? "Moves this lead to your Sales board"
+                  : `Moves to ${tab.label}`}
           </p>
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button variant={tab.date === "none" ? "danger" : "primary"} type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Save"}
-            </Button>
+            <Button variant="secondary" onClick={onClose}>{locked ? "Close" : "Cancel"}</Button>
+            {!locked && (
+              <Button variant={tab.date === "none" ? "danger" : "primary"} type="submit" disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </Button>
+            )}
           </div>
         </div>
       </form>

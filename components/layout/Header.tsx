@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaBug } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
-import { canUseLeads } from "@/lib/leads";
 import { signOut, useProfile } from "@/lib/session";
 import { ROLE_LABELS } from "@/types/user";
 import Avatar from "@/components/ui/Avatar";
@@ -14,13 +13,8 @@ export default function Header() {
   const pathname = usePathname();
 
   const links = [
-    ...(canUseLeads(profile.role)
-      ? [
-          { href: "/leads", label: "Leads" },
-          { href: "/sales", label: "Sales" },
-        ]
-      : []),
-    ...(profile.role === "admin" ? [{ href: "/users", label: "Users" }] : []),
+    { href: "/leads", label: "Leads" },
+    { href: "/sales", label: "Sales" },
   ];
 
   return (
@@ -37,21 +31,19 @@ export default function Header() {
             </div>
           </div>
 
-          {links.length > 1 && (
-            <nav className="flex gap-1">
-              {links.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-                    pathname.startsWith(l.href) ? "bg-emerald-50 text-emerald-800" : "text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </nav>
-          )}
+          <nav className="flex gap-1">
+            {links.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                  pathname.startsWith(l.href) ? "bg-emerald-50 text-emerald-800" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
         <div className="flex items-center gap-3">

@@ -3,22 +3,13 @@
 import { useCallback, useState } from "react";
 import { FiPlus } from "react-icons/fi";
 import type { Lead } from "@/types/lead";
-import { canUseLeads, useLeads } from "@/lib/leads";
-import { useProfile } from "@/lib/session";
+import { useLeads } from "@/lib/leads";
 import LeadsTable from "@/components/leads/LeadsTable";
 import LeadFormModal from "@/components/leads/LeadFormModal";
 import LogContactModal from "@/components/leads/LogContactModal";
 import Button from "@/components/ui/Button";
 
 export default function LeadsPage() {
-  const { role } = useProfile();
-  if (!canUseLeads(role)) {
-    return <p className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">Leads are only available to admin and sales.</p>;
-  }
-  return <LeadsWorkspace />;
-}
-
-function LeadsWorkspace() {
   const { leads, loading, error, reload, add, remove } = useLeads("new");
   const [formOpen, setFormOpen] = useState(false);
   const [selected, setSelected] = useState<Lead | null>(null);

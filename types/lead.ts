@@ -47,7 +47,7 @@ export const ACTIVITY_LABELS: Record<ActivityKind, string> = {
   inspection: "Inspection",
   proposal: "Proposal",
   wrong_lead: "Wrong lead",
-  already_working: "Working with other company",
+  already_working: "Working with other company", // old entries only; no longer offered
 };
 
 export interface Lead {

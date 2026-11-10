@@ -15,10 +15,3 @@ export interface Profile {
   role: Role;
   createdAt: string;
 }
-
-export interface NewUserInput {
-  fullName: string;
-  email: string;
-  password: string;
-  role: Role;
-}

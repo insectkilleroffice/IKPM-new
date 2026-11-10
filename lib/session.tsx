@@ -9,7 +9,7 @@ type SessionState =
   | { status: "loading" }
   | { status: "signed-out" }
   | { status: "no-profile"; email: string }
-  | { status: "ready"; profile: Profile; accessToken: string };
+  | { status: "ready"; profile: Profile };
 
 const SessionContext = createContext<SessionState>({ status: "loading" });
 
@@ -49,7 +49,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       setState(
         profile
-          ? { status: "ready", profile, accessToken: session.access_token }
+          ? { status: "ready", profile }
           : { status: "no-profile", email: session.user.email ?? "" }
       );
     };
@@ -78,10 +78,4 @@ export function useProfile(): Profile {
   const s = useSession();
   if (s.status !== "ready") throw new Error("useProfile used outside a signed-in page");
   return s.profile;
-}
-
-/** Current access token, for calling the app's own API routes. */
-export function useAccessToken(): string {
-  const s = useSession();
-  return s.status === "ready" ? s.accessToken : "";
 }

@@ -2,13 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { ActivityInput, ActivityKind, ClosedReason, Lead, LeadActivity, LeadInput, LeadStage, LeadType } from "@/types/lead";
-import type { Role } from "@/types/user";
 import { getSupabase } from "@/lib/supabase";
-
-/** Only admins and sales use the Leads and Sales tabs (also enforced by database policies). */
-export function canUseLeads(role: Role): boolean {
-  return role === "admin" || role === "sales";
-}
 
 interface LeadRow {
   id: string;

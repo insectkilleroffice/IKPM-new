@@ -85,6 +85,17 @@ function Gate({ children }: { children: ReactNode }) {
         <Button variant="secondary" className="mt-5 w-full" onClick={signOut}>Sign out</Button>
       </Card>
     );
+  // This app is for the sales team only. Admins use the separate admin app.
+  if (s.profile.role !== "sales")
+    return (
+      <Card tone="amber">
+        <h1 className="text-lg font-semibold text-slate-900">Sales team only</h1>
+        <p className="mt-2 text-sm text-slate-600">
+          <span className="font-medium">{s.profile.email}</span> is not a sales account. This app is only for the sales team.
+        </p>
+        <Button variant="secondary" className="mt-5 w-full" onClick={signOut}>Sign out</Button>
+      </Card>
+    );
   return <>{children}</>;
 }
 
